@@ -1,0 +1,95 @@
+{
+  "fuente": "Datos de demostración",
+  "generado": "2026-09-21T12:00:00",
+  "demo": true,
+  "kpis": [
+    { "id": "facturado", "label": "Facturación real", "value": "18.420 €", "delta": "de 100.000 € · 18,42 %", "dir": "up" },
+    { "id": "ritmo", "label": "Ritmo semanal necesario", "value": "3.138 €", "delta": "26 semanas de ventana", "dir": "" },
+    { "id": "activas", "label": "Tareas activas", "value": 26, "delta": "en las dos marcas", "dir": "" },
+    { "id": "mov", "label": "Movimientos hoy", "value": 12, "delta": "de agentes", "dir": "up" }
+  ],
+  "series": [2, 5, 3, 8, 6, 9, 12],
+  "seriesLabels": ["Mié", "Jue", "Vie", "Sáb", "Dom", "Lun", "Mar"],
+  "seriesTitulo": "Movimientos de agentes · últimos 7 días",
+  "feed": [
+    { "who": "Explorador", "initials": "EX", "color": "#2e8b57", "action": "encontró", "target": "STN-73 · top 3 del nicho friki-90s", "when": "hoy 09:32" },
+    { "who": "Guionista", "initials": "GU", "color": "#976d23", "action": "escribió", "target": "guion de 38 s para 'figura retro'", "when": "hoy 09:40" },
+    { "who": "Reportero", "initials": "RE", "color": "#1f5b78", "action": "cerró", "target": "métricas de la semana (GMV 1.240 €)", "when": "ayer 20:05" },
+    { "who": "Abastecedor", "initials": "AB", "color": "#7f8c8d", "action": "validó", "target": "proveedor ES con margen del 41 %", "when": "ayer 18:12" },
+    { "who": "Scrum Master", "initials": "SM", "color": "#8e44ad", "action": "cerró", "target": "STN-90 · cuenta de TikTok creada", "when": "lunes 20:00" }
+  ],
+  "rows": [
+    { "tarea": "STN-92", "title": "Exploración FastMoss · belleza · bienestar · bebé", "status": "progress", "marca": "bellezanbienestarbebe", "updated": "2026-09-21" },
+    { "tarea": "STN-73", "title": "Shortlist de 20 productos friki-90s", "status": "progress", "marca": "frikienlos90", "updated": "2026-09-21" },
+    { "tarea": "STN-91", "title": "Bio y escaparate de la cuenta", "status": "review", "marca": "bellezanbienestarbebe", "updated": "2026-09-20" },
+    { "tarea": "STN-74", "title": "Producto digital en Whop", "status": "todo", "marca": "frikienlos90", "updated": "2026-09-19" }
+  ],
+  "shops": [
+    { "name": "TikTok · bellezanbienestarbebe", "meta": "Belleza · Bienestar · Bebé", "state": "creada", "status": "ok", "url": "https://www.tiktok.com/@bellezanbienestarbebe" },
+    { "name": "TikTok · frikienlos90", "meta": "Nostalgia friki de los 90", "state": "en montaje", "status": "warn", "url": null },
+    { "name": "Whop · producto digital", "meta": "Guía del coleccionista", "state": "negocio activo", "status": "ok", "url": "https://whop.com/" },
+    { "name": "Etsy · frikienlos90", "meta": "Vintage y retro 90s", "state": "en apertura", "status": "warn", "url": "https://www.etsy.com/sell" }
+  ],
+  "agents": [
+    { "cron": "8:45 L–V", "name": "Scrum · daily standup", "what": "Comenta y mueve tarjetas", "marca": "Ambas", "last": "ok", "lastLabel": "ok" },
+    { "cron": "9:30 L–V", "name": "Explorador frikienlos90", "what": "FastMoss → top 3 + guion", "marca": "frikienlos90", "last": "ok", "lastLabel": "ok" },
+    { "cron": "10:15 L–V", "name": "Explorador 3B", "what": "FastMoss → top 3 + guion", "marca": "bellezanbienestarbebe", "last": "ok", "lastLabel": "ok" },
+    { "cron": "20:00 L–V", "name": "Scrum · cierre", "what": "Cierra tareas con criterio de hecho", "marca": "Ambas", "last": "ok", "lastLabel": "ok" }
+  ],
+  "connectors": [
+    { "kind": "Tareas", "name": "Linear", "permite": "Tareas y comentarios", "auth": "API key", "status": "ok", "state": "conectado" },
+    { "kind": "Producto", "name": "FastMoss API + MCP", "permite": "Datos de TikTok Shop", "auth": "Clave de desarrollador", "status": "warn", "state": "solicitar clave" },
+    { "kind": "Venta", "name": "TikTok Shop Open API", "permite": "Productos y pedidos", "auth": "Partner + OAuth", "status": "off", "state": "solicitar acceso" },
+    { "kind": "Venta", "name": "Whop", "permite": "Productos digitales", "auth": "API key", "status": "warn", "state": "crear clave" },
+    { "kind": "Venta", "name": "Etsy v3", "permite": "Listings y pedidos", "auth": "Keystring + OAuth", "status": "off", "state": "en apertura" }
+  ],
+  "llms": [
+    { "name": "Google Gemini", "meta": "Texto y visión", "estado": "tienes API" },
+    { "name": "OpenAI", "meta": "Texto y visión", "estado": "tienes API" },
+    { "name": "Zhipu GLM", "meta": "Texto", "estado": "tienes API" },
+    { "name": "AutoClaw (zai)", "meta": "Motor de los agentes", "estado": "activo" }
+  ],
+  "inbox": [
+    { "id": "wa", "title": "Revincular WhatsApp para los informes diarios", "detail": "AutoClaw → Canales → WhatsApp → escanear QR.", "prio": "Alta" },
+    { "id": "handle", "title": "Confirmar el @handle del TikTok de frikienlos90", "detail": "Sin él, su enlace de tienda queda vacío.", "prio": "Alta" },
+    { "id": "etsy", "title": "Abrir la tienda de Etsy", "detail": "Checklist de apertura en la pestaña Tiendas.", "prio": "Media" }
+  ],
+  "goal": { "estado": "demo", "hitos": [] },
+  "comercial": {
+    "objetivo": 100000.0, "real": 18420.0, "pedidos_real": 96, "pruebas": 1, "pct": 18.42,
+    "ritmo_semanal": 3138.0,
+    "por_canal": [
+      { "canal": "tiktok-3b", "n": 58, "total": 9210.0 },
+      { "canal": "etsy-friki", "n": 24, "total": 5140.0 },
+      { "canal": "whop-digital", "n": 14, "total": 4070.0 }
+    ],
+    "pedidos": [
+      { "id": "P-0096", "fecha": "2026-09-20", "concepto": "Serum vitamina C", "producto": "serum-vitc", "canal": "tiktok-3b", "importe": 24.9, "estado": "pagado", "es_prueba": 0 },
+      { "id": "P-0095", "fecha": "2026-09-20", "concepto": "Figura retro 90s", "producto": "figura-retro", "canal": "etsy-friki", "importe": 49.0, "estado": "enviado", "es_prueba": 0 },
+      { "id": "P-0094", "fecha": "2026-09-19", "concepto": "Guía del coleccionista (digital)", "producto": "guia-friki", "canal": "whop-digital", "importe": 19.0, "estado": "pagado", "es_prueba": 0 },
+      { "id": "P-0001", "fecha": "2026-09-21", "concepto": "Pedido de prueba — verificación del sistema", "producto": "test-verificacion", "canal": "tiktok-3b", "importe": 29.99, "estado": "pagado", "es_prueba": 1 }
+    ],
+    "facturas": [
+      { "numero": "F-2026-0096", "pedido_id": "P-0096", "fecha": "2026-09-20", "cliente": "Cliente demo 96", "concepto": "Serum vitamina C", "importe": 24.9, "estado_cobro": "cobrada" },
+      { "numero": "F-2026-0095", "pedido_id": "P-0095", "fecha": "2026-09-20", "cliente": "Cliente demo 95", "concepto": "Figura retro 90s", "importe": 49.0, "estado_cobro": "cobrada" },
+      { "numero": "F-2026-0094", "pedido_id": "P-0094", "fecha": "2026-09-19", "cliente": "Cliente demo 94", "concepto": "Guía del coleccionista (digital)", "importe": 19.0, "estado_cobro": "cobrada" },
+      { "numero": "F-2026-0001", "pedido_id": "P-0001", "fecha": "2026-09-21", "cliente": "Clienta de prueba (verificación interna)", "concepto": "Pedido de prueba — verificación del sistema", "importe": 29.99, "estado_cobro": "cobrada" }
+    ],
+    "clientes": 3
+  },
+  "plan6m": [
+    { "mes": "Mes 1 · oct 2026", "objetivo": 4000, "acciones": "Abrir las 3 tiendas, 6 productos publicados, 12 vídeos, primer directo", "comprobacion": "6 fichas activas + 12 vídeos + 1 directo", "status": "progress" },
+    { "mes": "Mes 2 · nov 2026", "objetivo": 9000, "acciones": "Repetir ganadores, 2º proveedor, escaparate 3B completo, Etsy con 20 listings", "comprobacion": "GMV del mes ≥ 9.000 y 20 listings Etsy", "status": "todo" },
+    { "mes": "Mes 3 · dic 2026", "objetivo": 16000, "acciones": "Navidad, directos 3/semana, primer producto digital en Whop", "comprobacion": "GMV ≥ 16.000 y ≥ 1 venta digital", "status": "todo" },
+    { "mes": "Mes 4 · ene 2027", "objetivo": 20000, "acciones": "Rebajas, UGC a marcas, captar creators afiliados al 10-15 %", "comprobacion": "GMV ≥ 20.000 y ≥ 3 creators activos", "status": "todo" },
+    { "mes": "Mes 5 · feb 2027", "objetivo": 24000, "acciones": "Escalar catálogo ganador, pauta pequeña (a confirmar), optimizar fichas", "comprobacion": "GMV ≥ 24.000 y ROAS ≥ 2", "status": "todo" },
+    { "mes": "Mes 6 · mar 2027", "objetivo": 31000, "acciones": "Bundles, fidelización, revisión de precios", "comprobacion": "Acumulado ≥ 100.000 €", "status": "todo" }
+  ],
+  "enlaces": [
+    { "name": "TikTok · @bellezanbienestarbebe", "url": "https://www.tiktok.com/@bellezanbienestarbebe", "http": "200", "estado": "ok" },
+    { "name": "TikTok · frikienlos90", "url": null, "http": "—", "estado": "pendiente" },
+    { "name": "Etsy · alta de tienda", "url": "https://www.etsy.com/sell", "http": "200", "estado": "ok" },
+    { "name": "Whop · negocio", "url": "https://whop.com/", "http": "200", "estado": "ok" },
+    { "name": "FastMoss · API", "url": "https://developers.fastmoss.com/", "http": "567 (anti-bot)", "estado": "sesion" }
+  ]
+}

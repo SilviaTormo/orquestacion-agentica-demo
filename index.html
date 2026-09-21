@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ST Innovation · Centro de orquestación (versión demo)</title>
+<style>
+  :root {
+    --bg: #ffffff; --bg-soft: #f7f6f3; --bg-hover: #efeeec;
+    --ink: #37352f; --ink-2: #787774; --ink-3: #9b9a97;
+    --line: #ececea; --line-strong: #d3d1cb;
+    --accent: oklch(62% 0.11 198); --accent-ink: oklch(45% 0.10 198);
+    --ok-bg: #dbeddb; --ok-ink: #2b593f;
+    --warn-bg: #fdecc8; --warn-ink: #976d23;
+    --bad-bg: #ffe2dd; --bad-ink: #b13b2c;
+    --info-bg: #d3e5ef; --info-ink: #1f5b78;
+    --mute-bg: #e9e5e3; --mute-ink: #5a534f;
+    --radius-sm: 4px; --radius-md: 6px; --radius-lg: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", "Noto Sans", sans-serif;
+    font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; }
+
+  .app { display:grid; grid-template-columns: 244px 1fr; min-height:100vh; }
+  .side { background: var(--bg-soft); border-right:1px solid var(--line); padding:14px 8px; user-select:none; }
+  .ws { display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:var(--radius-sm); cursor:pointer; }
+  .ws:hover { background: var(--bg-hover); }
+  .ws-icon { width:22px; height:22px; border-radius:4px; background:#1f1f1f; color:#fff;
+             display:grid; place-items:center; font-weight:600; font-size:12px; }
+  .ws-name { font-weight:600; flex:1; }
+  .side-note { margin:12px 8px 6px; color:var(--ink-3); font-size:12px; }
+  .nav { display:flex; flex-direction:column; gap:1px; margin-top:6px; }
+  .nav-item { display:flex; align-items:center; gap:8px; padding:5px 8px; border-radius:var(--radius-sm);
+              cursor:pointer; color:var(--ink); border:0; background:none; text-align:left; width:100%; }
+  .nav-item:hover { background: var(--bg-hover); }
+  .nav-item.active { background:#e8e6e1; font-weight:500; }
+  .nav-item .ic { width:16px; height:16px; flex:0 0 16px; color:var(--ink-2); }
+  .nav-item .badge { margin-left:auto; font-size:11px; background:var(--warn-bg); color:var(--warn-ink);
+                     border-radius:8px; padding:0 6px; }
+
+  .main { display:flex; flex-direction:column; min-width:0; }
+  .topbar { height:44px; padding:0 16px; border-bottom:1px solid var(--line);
+            display:flex; align-items:center; gap:12px; color:var(--ink-2); font-size:13px; position:sticky; top:0; background:#fff; z-index:5; }
+  .crumbs span:not(:last-child)::after { content:"/"; margin:0 6px; color:var(--ink-3); }
+  .pill-live { display:inline-flex; align-items:center; gap:6px; padding:2px 8px 2px 6px; background:#fff;
+               border:1px solid var(--line-strong); border-radius:999px; font-size:12px; color:var(--ink-2); }
+  .pill-live .dot { width:7px; height:7px; border-radius:50%; background:#2ecc71;
+                    box-shadow:0 0 0 0 rgba(46,204,113,.55); animation: pulse 1.8s infinite; }
+  .pill-live.syncing .dot { background: var(--accent); animation:none; }
+  .pill-live.stale .dot { background:#e6a23c; animation:none; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(46,204,113,.55)} 70%{box-shadow:0 0 0 7px rgba(46,204,113,0)} 100%{box-shadow:0 0 0 0 rgba(46,204,113,0)} }
+
+  .page { padding:48px max(48px,6vw) 72px; max-width:1180px; width:100%; align-self:center; }
+  .page-emoji { font-size:56px; line-height:1; margin:-4px 0 10px; }
+  h1.page-title { font-size:40px; line-height:1.15; font-weight:700; letter-spacing:-0.01em; margin:0 0 8px; }
+  .page-meta { display:flex; align-items:center; gap:14px; color:var(--ink-2); font-size:13px; margin-bottom:26px; flex-wrap:wrap; }
+  .page-meta .who { width:18px; height:18px; border-radius:50%; background:#f1c40f; color:#5a4500;
+                    display:inline-grid; place-items:center; font-size:11px; font-weight:700; }
+
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; font-size:13px; color:var(--ink);
+         background:#fff; border:1px solid var(--line-strong); border-radius:var(--radius-sm); cursor:pointer;
+         transition: background .15s ease; }
+  .btn:hover { background: var(--bg-hover); }
+  .btn.primary { background: var(--accent); color:#fff; border-color:transparent; }
+  .btn.primary:hover { background: var(--accent-ink); }
+  .btn.ghost { border-color: transparent; }
+  .btn .ic { width:14px; height:14px; }
+  .btn .ic.spin { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn[aria-pressed="true"] { background:#e8e6e1; }
+
+  .callout { background: var(--bg-soft); border-radius: var(--radius-md); padding:14px 16px;
+             display:flex; gap:12px; align-items:flex-start; margin:10px 0 26px; }
+  .callout .emj { font-size:18px; line-height:1.4; }
+  .callout small { color: var(--ink-2); }
+
+  .kpis { display:grid; grid-template-columns: repeat(4, 1fr); gap:1px; background:var(--line);
+          border:1px solid var(--line); border-radius: var(--radius-md); overflow:hidden; margin:8px 0 30px; }
+  .kpi { background:#fff; padding:18px 20px; display:flex; flex-direction:column; gap:4px; }
+  .kpi .label { color:var(--ink-2); font-size:12px; letter-spacing:.03em; text-transform:uppercase; font-weight:500; }
+  .kpi .value { font-size:32px; font-weight:600; letter-spacing:-0.01em; font-variant-numeric: tabular-nums; transition: color .25s ease; }
+  .kpi .value.flash { color: var(--accent-ink); }
+  .kpi .delta { font-size:12px; color: var(--ink-2); }
+  .kpi .delta.up { color:#2b8a3e; } .kpi .delta.down { color:#c0392b; }
+
+  h2.h { font-size:18px; font-weight:600; margin:30px 0 6px; letter-spacing:-0.005em; }
+  .h-sub { color:var(--ink-2); font-size:13px; margin-bottom:12px; }
+
+  .two-col { display:grid; grid-template-columns: 1.1fr 1fr; gap:24px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius: var(--radius-md); padding:16px 18px; }
+  .card-title { display:flex; align-items:center; justify-content:space-between; font-size:13px; color:var(--ink-2); margin-bottom:8px; }
+  .card-title strong { color:var(--ink); font-weight:600; }
+  .spark { width:100%; height:120px; }
+  .spark-fill { fill: rgba(46,170,220,.10); }
+  .spark-line { fill:none; stroke: var(--accent); stroke-width:2; }
+  .spark-dot { fill: var(--accent); }
+  .spark-grid line { stroke: var(--line); stroke-dasharray: 2 3; }
+  .spark-axis text { fill: var(--ink-3); font-size:11px; }
+
+  .feed { display:flex; flex-direction:column; max-height:320px; overflow:auto; }
+  .feed-row { display:flex; gap:12px; padding:10px 4px; border-bottom:1px solid var(--line); }
+  .feed-row:last-child { border-bottom:none; }
+  .feed-row .av { flex:0 0 26px; width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+                  color:#fff; font-size:11px; font-weight:700; }
+  .feed-row .body { flex:1; min-width:0; font-size:13px; }
+  .feed-row .body .who { font-weight:600; }
+  .feed-row .time { color:var(--ink-3); font-size:12px; white-space:nowrap; }
+  .feed-row.new { background: rgba(46,170,220,.06); }
+  .feed-row.new .body .who::before { content:"•"; color:var(--accent); margin-right:6px; }
+
+  .db { border:1px solid var(--line); border-radius: var(--radius-md); overflow:hidden; background:#fff; }
+  .db-head, .db-row { display:grid; grid-template-columns: 92px 2.6fr 1fr 0.9fr 0.9fr; align-items:center;
+                      padding:8px 12px; border-bottom:1px solid var(--line); font-size:13px; gap:8px; }
+  .db-head { background: var(--bg-soft); color:var(--ink-2); font-size:12px; text-transform:uppercase;
+             letter-spacing:.03em; font-weight:500; }
+  .db-row:last-child { border-bottom:none; }
+  .db-row:hover { background: var(--bg-soft); }
+  .db-row.changed { animation: rowflash 1.4s ease; }
+  @keyframes rowflash { 0%{background: rgba(46,170,220,.18)} 100%{background:transparent} }
+  .db-cell.title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pill { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:3px; font-size:12px; font-weight:500; }
+  .pill.done { background:var(--ok-bg); color:var(--ok-ink); }
+  .pill.progress { background:var(--warn-bg); color:var(--warn-ink); }
+  .pill.review { background:var(--info-bg); color:var(--info-ink); }
+  .pill.blocked { background:var(--bad-bg); color:var(--bad-ink); }
+  .pill.todo { background:var(--mute-bg); color:var(--mute-ink); }
+
+  .grid3 { display:grid; grid-template-columns: repeat(3, 1fr); gap:14px; }
+  .tile { background:#fff; border:1px solid var(--line); border-radius: var(--radius-md); padding:16px 18px; display:flex; flex-direction:column; gap:6px; }
+  .tile .t-name { font-weight:600; }
+  .tile .t-meta { color:var(--ink-2); font-size:12.5px; }
+  .tile .t-foot { margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .tag { font-size:11px; font-weight:600; padding:2px 8px; border-radius:999px; border:1px solid var(--line-strong); color:var(--ink-2); }
+  .tag.ok { background:var(--ok-bg); color:var(--ok-ink); border-color:transparent; }
+  .tag.warn { background:var(--warn-bg); color:var(--warn-ink); border-color:transparent; }
+  .tag.off { background:var(--mute-bg); color:var(--mute-ink); border-color:transparent; }
+
+  .inbox-row { display:flex; gap:12px; align-items:flex-start; padding:12px 4px; border-bottom:1px solid var(--line); }
+  .inbox-row:last-child { border-bottom:none; }
+  .inbox-row input[type=checkbox] { margin-top:3px; accent-color:#2e8b57; }
+  .inbox-row .txt { flex:1; }
+  .inbox-row .txt .t { font-weight:600; }
+  .inbox-row .txt .d { color:var(--ink-2); font-size:12.5px; }
+  .inbox-row.done .txt .t { text-decoration: line-through; color: var(--ink-3); }
+
+  .cmd { display:flex; align-items:center; gap:8px; background:var(--bg-soft); border:1px solid var(--line);
+         border-radius: var(--radius-sm); padding:6px 8px; margin-top:6px; }
+  .cmd code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12.5px; flex:1; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cmd button { flex:0 0 auto; }
+  .field { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
+  .field label { font-size:12px; color:var(--ink-2); letter-spacing:.02em; }
+  .field input, .field select, .field textarea { padding:6px 8px; border:1px solid var(--line-strong);
+     border-radius: var(--radius-sm); background:#fff; color:var(--ink); font:inherit; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline:2px solid var(--accent); outline-offset:1px; }
+  .field .err { color:#b13b2c; font-size:12px; display:none; }
+  .field.invalid input, .field.invalid textarea { border-color:#b13b2c; }
+  .field.invalid .err { display:block; }
+
+  .empty { border:1px dashed var(--line-strong); border-radius: var(--radius-md); padding:28px 24px; text-align:center; color:var(--ink-2); }
+  .empty .h { font-size:15px; font-weight:600; color:var(--ink); margin-bottom:4px; }
+  /* Build (11): aire, pesos sutiles, una sola acento */
+  .tracker { padding:6px 2px 2px; }
+  .tracker .t-num { font-size:44px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums; }
+  .tracker .t-of { font-size:17px; font-weight:400; color:var(--ink-2); letter-spacing:0; }
+  .tracker .t-bar { height:6px; background:var(--bg-hover); border-radius:999px; overflow:hidden; margin:18px 0 14px; }
+  .tracker .t-bar span { display:block; height:100%; background:var(--accent); border-radius:999px; transition:width .4s ease; }
+  .tracker .t-meta { display:flex; gap:22px; flex-wrap:wrap; color:var(--ink-2); font-size:13px; }
+  .page { padding:56px max(56px,7vw) 88px; }
+  h2.h { margin:40px 0 8px; font-weight:550; }
+  .kpi .label, .db-head { font-weight:500; }
+  .card, .db, .tile { box-shadow:0 1px 2px rgba(15,15,15,.03); }
+
+  .footer { margin-top:32px; padding-top:16px; border-top:1px solid var(--line); color:var(--ink-3); font-size:12px;
+            display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .footer .key { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; background:var(--bg-soft); padding:1px 5px; border-radius:3px; color:var(--ink-2); }
+
+  .toast { position:fixed; bottom:20px; left:50%; transform: translateX(-50%); background:#1f1f1f; color:#fff;
+           padding:8px 14px; border-radius:8px; font-size:13px; opacity:0; pointer-events:none;
+           transition: opacity .2s ease; z-index:20; }
+  .toast.show { opacity:1; }
+
+  .section { display:none; }
+  .section.active { display:block; }
+
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+  @media (max-width: 980px) {
+    .app { grid-template-columns: 1fr; } .side { display:none; }
+    .page { padding:28px 18px 56px; }
+    .kpis { grid-template-columns: repeat(2,1fr); }
+    .two-col, .grid3 { grid-template-columns: 1fr; }
+    .db-head, .db-row { grid-template-columns: 72px 2fr 1fr; }
+    .db-cell.who, .db-cell.updated { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="ws" role="button" tabindex="0">
+      <div class="ws-icon">ST</div><div class="ws-name">ST Innovation</div>
+    </div>
+    <div class="side-note">Espacio de trabajo</div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-note">Cuentas</div>
+    <div class="nav" id="navAccounts"></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="crumbs"><span>ST Innovation</span><span>Commerce</span><span id="crumbNow">Panel</span></div>
+      <div style="flex:1"></div>
+      <div class="pill-live" id="livePill"><span class="dot"></span><span id="liveText">En vivo · sincronizado</span></div>
+    </div>
+
+    <div class="page">
+      <div class="page-emoji">🧭</div>
+      <h1 class="page-title">Centro de orquestación agéntica</h1>
+      <div class="page-meta">
+        <span class="who">ST</span><span>Operado por el equipo de agentes de <strong>ST Innovation</strong></span>
+        <span>·</span><span id="updatedAt">Actualizado hace un momento</span>
+        <span style="flex:1"></span>
+        <button class="btn ghost" id="autoBtn" aria-pressed="true" title="Refresco automático cada 60 s"><span id="autoLbl">Auto · activo</span></button>
+        <button class="btn primary" id="refreshBtn"><span class="ic" id="refreshIco"></span><span>Actualizar datos</span></button>
+      </div>
+
+      <div class="callout">
+        <div class="emj">💡</div>
+        <div>
+          <div><strong>Esto es una app local de orquestación.</strong> Los datos vienen de tus tableros (Linear/Notion) y de las tiendas; los agentes los actualizan solos.</div>
+          <small>Refresco al abrir y bajo demanda. Para datos vivos, ábrela con <span class="key">servir.bat</span> (servidor local).</small>
+        </div>
+      </div>
+
+      <section class="section active" id="s-panel">
+        <div class="kpis" id="kpis"></div>
+        <div class="two-col">
+          <div class="card">
+            <div class="card-title"><strong id="sparkTitle">Actividad de agentes · últimos 7 días</strong><span id="sparkSum">—</span></div>
+            <svg class="spark" viewBox="0 0 600 140" preserveAspectRatio="none">
+              <g class="spark-grid"><line x1="0" y1="35" x2="600" y2="35"/><line x1="0" y1="70" x2="600" y2="70"/><line x1="0" y1="105" x2="600" y2="105"/></g>
+              <path class="spark-fill" id="sparkFill" d=""></path>
+              <path class="spark-line" id="sparkLine" d=""></path>
+              <g id="sparkDots"></g><g id="sparkLabels" class="spark-axis"></g>
+            </svg>
+          </div>
+          <div class="card">
+            <div class="card-title"><strong>Flujo de agentes</strong><span id="feedWindow">últimos movimientos</span></div>
+            <div class="feed" id="feed"></div>
+          </div>
+        </div>
+        <h2 class="h">Tareas activas</h2>
+        <div class="h-sub">Tablero de las dos marcas · estado en vivo · la “Bandeja humana” espera tus OK</div>
+        <div class="db" id="db"><div class="db-head"><div>Tarea</div><div>Nombre</div><div>Estado</div><div class="db-cell who">Marca</div><div class="db-cell updated">Actualizado</div></div></div>
+      </section>
+
+      <section class="section" id="s-facturacion">
+        <h2 class="h">Facturación frente al objetivo</h2>
+        <div class="h-sub">Ventana de 6 meses · solo pedidos reales (los de prueba se muestran aparte, nunca suman al objetivo)</div>
+        <div class="card" id="tracker"></div>
+        <h2 class="h">Pedidos</h2>
+        <div class="db" id="ordersTbl"><div class="db-head"><div>Pedido</div><div>Concepto</div><div>Importe</div><div class="db-cell who">Canal</div><div class="db-cell updated">Estado</div></div></div>
+        <h2 class="h">Libro de facturación</h2>
+        <div class="db" id="invTbl"><div class="db-head"><div>Factura</div><div>Cliente</div><div>Importe</div><div class="db-cell who">Fecha</div><div class="db-cell updated">Cobro</div></div></div>
+      </section>
+
+      <section class="section" id="s-tiendas">
+        <h2 class="h">Tiendas y cuentas</h2>
+        <div class="h-sub">TikTok Shop (dos marcas) · Etsy · producto digital en Whop</div>
+        <div class="grid3" id="shops"></div>
+        <h2 class="h">Enlaces verificados (antes / después)</h2>
+        <div class="h-sub">Auditoría del 21/09/2026 · “sesión” significa que abre con tu cuenta, en navegador: no es un enlace roto</div>
+        <div class="db" id="linksTbl"><div class="db-head"><div>HTTP</div><div>Enlace</div><div>Estado</div><div class="db-cell who">Tipo</div><div class="db-cell updated">Abrir</div></div></div>
+        <h2 class="h">Objetivo a 30 días</h2>
+        <div class="card" id="goal30"></div>
+      </section>
+
+      <section class="section" id="s-productos">
+        <h2 class="h">Productos</h2>
+        <div class="h-sub">Candidatos del nicho → validados → publicados. Los rellenan los Exploradores.</div>
+        <div id="productsBox"></div>
+      </section>
+
+      <section class="section" id="s-contenido">
+        <h2 class="h">Contenido</h2>
+        <div class="h-sub">Cola de vídeos por estado: guion → grabado → editado → programado → publicado.</div>
+        <div id="contentBox"></div>
+      </section>
+
+      <section class="section" id="s-agentes">
+        <h2 class="h">Equipo de agentes</h2>
+        <div class="h-sub">Programados en tu equipo. Horarios de Madrid.</div>
+        <div class="db" id="agentsTbl"><div class="db-head"><div>Horario</div><div>Agente</div><div>Qué hace</div><div class="db-cell who">Marca</div><div class="db-cell updated">Último estado</div></div></div>
+      </section>
+
+      <section class="section" id="s-conectores">
+        <h2 class="h">Conectores y APIs</h2>
+        <div class="h-sub">Qué API existe para cada servicio, con qué se autentica y qué falta por conectar.</div>
+        <div class="db" id="connTbl"><div class="db-head"><div>Tipo</div><div>Servicio</div><div>Acceso</div><div class="db-cell who">Auth</div><div class="db-cell updated">Estado</div></div></div>
+        <h2 class="h">Capacidades agénticas disponibles</h2>
+        <div class="grid3" id="llms"></div>
+      </section>
+
+      <section class="section" id="s-plan">
+        <h2 class="h">Plan de 6 meses hacia los 100.000 €</h2>
+        <div class="h-sub">Objetivo por mes y cómo se comprueba cada hito. La pauta de pago requiere tu confirmación antes de gastar.</div>
+        <div class="db" id="planTbl"><div class="db-head"><div>Mes</div><div>Objetivo</div><div>Acciones</div><div class="db-cell who">Comprobación</div><div class="db-cell updated">Estado</div></div></div>
+        <h2 class="h">Manual de operación</h2>
+        <div class="card" id="manualBox"></div>
+      </section>
+
+      <section class="section" id="s-bandeja">
+        <h2 class="h">Bandeja humana</h2>
+        <div class="h-sub">Lo único que necesita tus manos: aprobaciones y encargos. Se guarda en este navegador.</div>
+        <div class="card"><div id="inbox"></div></div>
+        <h2 class="h">Lanzar un encargo al equipo</h2>
+        <div class="card" style="max-width:640px">
+          <form id="orderForm" novalidate>
+            <div class="field" id="f-what">
+              <label for="o-what">¿Qué quieres que haga el equipo?</label>
+              <input id="o-what" name="what" placeholder="Ej.: buscar 10 productos frikis de los 90 con comisión ≥10%" />
+              <div class="err">Escribe al menos 10 caracteres.</div>
+            </div>
+            <div class="field" id="f-brand">
+              <label for="o-brand">Marca</label>
+              <select id="o-brand" name="brand">
+                <option value="frikienlos90">frikienlos90</option>
+                <option value="bellezanbienestarbebe">bellezanbienestarbebe</option>
+                <option value="ambas">Ambas</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="o-prio">Prioridad</label>
+              <select id="o-prio" name="prio"><option>Alta</option><option>Media</option><option>Baja</option></select>
+            </div>
+            <button class="btn primary" type="submit">Generar encargo</button>
+            <div id="orderOut"></div>
+          </form>
+        </div>
+      </section>
+
+      <div class="footer">
+        <span>Fuente: <strong id="srcName">Linear API</strong> · espacio <strong>ST Innovation</strong></span>
+        <span>·</span><span>Datos: <span class="key">data.json</span></span>
+        <span>·</span><span id="footerTime"></span>
+        <span>·</span><span>App local · <span class="key">repos/orquestacion-agentica</span></span>
+      </div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Datos: el bloque DATA lo regenera scripts/refresh_data.py (lee Linear y escribe aquí + data.json). */
+/* DATA:START */
+var DATA = {
+  "fuente": "Datos de demostración",
+  "generado": "2026-09-21T12:00:00",
+  "demo": true,
+  "kpis": [
+    { "id": "facturado", "label": "Facturación real", "value": "18.420 €", "delta": "de 100.000 € · 18,42 %", "dir": "up" },
+    { "id": "ritmo", "label": "Ritmo semanal necesario", "value": "3.138 €", "delta": "26 semanas de ventana", "dir": "" },
+    { "id": "activas", "label": "Tareas activas", "value": 26, "delta": "en las dos marcas", "dir": "" },
+    { "id": "mov", "label": "Movimientos hoy", "value": 12, "delta": "de agentes", "dir": "up" }
+  ],
+  "series": [2, 5, 3, 8, 6, 9, 12],
+  "seriesLabels": ["Mié", "Jue", "Vie", "Sáb", "Dom", "Lun", "Mar"],
+  "seriesTitulo": "Movimientos de agentes · últimos 7 días",
+  "feed": [
+    { "who": "Explorador", "initials": "EX", "color": "#2e8b57", "action": "encontró", "target": "STN-73 · top 3 del nicho friki-90s", "when": "hoy 09:32" },
+    { "who": "Guionista", "initials": "GU", "color": "#976d23", "action": "escribió", "target": "guion de 38 s para 'figura retro'", "when": "hoy 09:40" },
+    { "who": "Reportero", "initials": "RE", "color": "#1f5b78", "action": "cerró", "target": "métricas de la semana (GMV 1.240 €)", "when": "ayer 20:05" },
+    { "who": "Abastecedor", "initials": "AB", "color": "#7f8c8d", "action": "validó", "target": "proveedor ES con margen del 41 %", "when": "ayer 18:12" },
+    { "who": "Scrum Master", "initials": "SM", "color": "#8e44ad", "action": "cerró", "target": "STN-90 · cuenta de TikTok creada", "when": "lunes 20:00" }
+  ],
+  "rows": [
+    { "tarea": "STN-92", "title": "Exploración FastMoss · belleza · bienestar · bebé", "status": "progress", "marca": "bellezanbienestarbebe", "updated": "2026-09-21" },
+    { "tarea": "STN-73", "title": "Shortlist de 20 productos friki-90s", "status": "progress", "marca": "frikienlos90", "updated": "2026-09-21" },
+    { "tarea": "STN-91", "title": "Bio y escaparate de la cuenta", "status": "review", "marca": "bellezanbienestarbebe", "updated": "2026-09-20" },
+    { "tarea": "STN-74", "title": "Producto digital en Whop", "status": "todo", "marca": "frikienlos90", "updated": "2026-09-19" }
+  ],
+  "shops": [
+    { "name": "TikTok · bellezanbienestarbebe", "meta": "Belleza · Bienestar · Bebé", "state": "creada", "status": "ok", "url": "https://www.tiktok.com/@bellezanbienestarbebe" },
+    { "name": "TikTok · frikienlos90", "meta": "Nostalgia friki de los 90", "state": "en montaje", "status": "warn", "url": null },
+    { "name": "Whop · producto digital", "meta": "Guía del coleccionista", "state": "negocio activo", "status": "ok", "url": "https://whop.com/" },
+    { "name": "Etsy · frikienlos90", "meta": "Vintage y retro 90s", "state": "en apertura", "status": "warn", "url": "https://www.etsy.com/sell" }
+  ],
+  "agents": [
+    { "cron": "8:45 L–V", "name": "Scrum · daily standup", "what": "Comenta y mueve tarjetas", "marca": "Ambas", "last": "ok", "lastLabel": "ok" },
+    { "cron": "9:30 L–V", "name": "Explorador frikienlos90", "what": "FastMoss → top 3 + guion", "marca": "frikienlos90", "last": "ok", "lastLabel": "ok" },
+    { "cron": "10:15 L–V", "name": "Explorador 3B", "what": "FastMoss → top 3 + guion", "marca": "bellezanbienestarbebe", "last": "ok", "lastLabel": "ok" },
+    { "cron": "20:00 L–V", "name": "Scrum · cierre", "what": "Cierra tareas con criterio de hecho", "marca": "Ambas", "last": "ok", "lastLabel": "ok" }
+  ],
+  "connectors": [
+    { "kind": "Tareas", "name": "Linear", "permite": "Tareas y comentarios", "auth": "API key", "status": "ok", "state": "conectado" },
+    { "kind": "Producto", "name": "FastMoss API + MCP", "permite": "Datos de TikTok Shop", "auth": "Clave de desarrollador", "status": "warn", "state": "solicitar clave" },
+    { "kind": "Venta", "name": "TikTok Shop Open API", "permite": "Productos y pedidos", "auth": "Partner + OAuth", "status": "off", "state": "solicitar acceso" },
+    { "kind": "Venta", "name": "Whop", "permite": "Productos digitales", "auth": "API key", "status": "warn", "state": "crear clave" },
+    { "kind": "Venta", "name": "Etsy v3", "permite": "Listings y pedidos", "auth": "Keystring + OAuth", "status": "off", "state": "en apertura" }
+  ],
+  "llms": [
+    { "name": "Google Gemini", "meta": "Texto y visión", "estado": "tienes API" },
+    { "name": "OpenAI", "meta": "Texto y visión", "estado": "tienes API" },
+    { "name": "Zhipu GLM", "meta": "Texto", "estado": "tienes API" },
+    { "name": "AutoClaw (zai)", "meta": "Motor de los agentes", "estado": "activo" }
+  ],
+  "inbox": [
+    { "id": "wa", "title": "Revincular WhatsApp para los informes diarios", "detail": "AutoClaw → Canales → WhatsApp → escanear QR.", "prio": "Alta" },
+    { "id": "handle", "title": "Confirmar el @handle del TikTok de frikienlos90", "detail": "Sin él, su enlace de tienda queda vacío.", "prio": "Alta" },
+    { "id": "etsy", "title": "Abrir la tienda de Etsy", "detail": "Checklist de apertura en la pestaña Tiendas.", "prio": "Media" }
+  ],
+  "goal": { "estado": "demo", "hitos": [] },
+  "comercial": {
+    "objetivo": 100000.0, "real": 18420.0, "pedidos_real": 96, "pruebas": 1, "pct": 18.42,
+    "ritmo_semanal": 3138.0,
+    "por_canal": [
+      { "canal": "tiktok-3b", "n": 58, "total": 9210.0 },
+      { "canal": "etsy-friki", "n": 24, "total": 5140.0 },
+      { "canal": "whop-digital", "n": 14, "total": 4070.0 }
+    ],
+    "pedidos": [
+      { "id": "P-0096", "fecha": "2026-09-20", "concepto": "Serum vitamina C", "producto": "serum-vitc", "canal": "tiktok-3b", "importe": 24.9, "estado": "pagado", "es_prueba": 0 },
+      { "id": "P-0095", "fecha": "2026-09-20", "concepto": "Figura retro 90s", "producto": "figura-retro", "canal": "etsy-friki", "importe": 49.0, "estado": "enviado", "es_prueba": 0 },
+      { "id": "P-0094", "fecha": "2026-09-19", "concepto": "Guía del coleccionista (digital)", "producto": "guia-friki", "canal": "whop-digital", "importe": 19.0, "estado": "pagado", "es_prueba": 0 },
+      { "id": "P-0001", "fecha": "2026-09-21", "concepto": "Pedido de prueba — verificación del sistema", "producto": "test-verificacion", "canal": "tiktok-3b", "importe": 29.99, "estado": "pagado", "es_prueba": 1 }
+    ],
+    "facturas": [
+      { "numero": "F-2026-0096", "pedido_id": "P-0096", "fecha": "2026-09-20", "cliente": "Cliente demo 96", "concepto": "Serum vitamina C", "importe": 24.9, "estado_cobro": "cobrada" },
+      { "numero": "F-2026-0095", "pedido_id": "P-0095", "fecha": "2026-09-20", "cliente": "Cliente demo 95", "concepto": "Figura retro 90s", "importe": 49.0, "estado_cobro": "cobrada" },
+      { "numero": "F-2026-0094", "pedido_id": "P-0094", "fecha": "2026-09-19", "cliente": "Cliente demo 94", "concepto": "Guía del coleccionista (digital)", "importe": 19.0, "estado_cobro": "cobrada" },
+      { "numero": "F-2026-0001", "pedido_id": "P-0001", "fecha": "2026-09-21", "cliente": "Clienta de prueba (verificación interna)", "concepto": "Pedido de prueba — verificación del sistema", "importe": 29.99, "estado_cobro": "cobrada" }
+    ],
+    "clientes": 3
+  },
+  "plan6m": [
+    { "mes": "Mes 1 · oct 2026", "objetivo": 4000, "acciones": "Abrir las 3 tiendas, 6 productos publicados, 12 vídeos, primer directo", "comprobacion": "6 fichas activas + 12 vídeos + 1 directo", "status": "progress" },
+    { "mes": "Mes 2 · nov 2026", "objetivo": 9000, "acciones": "Repetir ganadores, 2º proveedor, escaparate 3B completo, Etsy con 20 listings", "comprobacion": "GMV del mes ≥ 9.000 y 20 listings Etsy", "status": "todo" },
+    { "mes": "Mes 3 · dic 2026", "objetivo": 16000, "acciones": "Navidad, directos 3/semana, primer producto digital en Whop", "comprobacion": "GMV ≥ 16.000 y ≥ 1 venta digital", "status": "todo" },
+    { "mes": "Mes 4 · ene 2027", "objetivo": 20000, "acciones": "Rebajas, UGC a marcas, captar creators afiliados al 10-15 %", "comprobacion": "GMV ≥ 20.000 y ≥ 3 creators activos", "status": "todo" },
+    { "mes": "Mes 5 · feb 2027", "objetivo": 24000, "acciones": "Escalar catálogo ganador, pauta pequeña (a confirmar), optimizar fichas", "comprobacion": "GMV ≥ 24.000 y ROAS ≥ 2", "status": "todo" },
+    { "mes": "Mes 6 · mar 2027", "objetivo": 31000, "acciones": "Bundles, fidelización, revisión de precios", "comprobacion": "Acumulado ≥ 100.000 €", "status": "todo" }
+  ],
+  "enlaces": [
+    { "name": "TikTok · @bellezanbienestarbebe", "url": "https://www.tiktok.com/@bellezanbienestarbebe", "http": "200", "estado": "ok" },
+    { "name": "TikTok · frikienlos90", "url": null, "http": "—", "estado": "pendiente" },
+    { "name": "Etsy · alta de tienda", "url": "https://www.etsy.com/sell", "http": "200", "estado": "ok" },
+    { "name": "Whop · negocio", "url": "https://whop.com/", "http": "200", "estado": "ok" },
+    { "name": "FastMoss · API", "url": "https://developers.fastmoss.com/", "http": "567 (anti-bot)", "estado": "sesion" }
+  ]
+};
+/* DATA:END */
+
+var ICONS = {
+  panel: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="4"/><rect x="14" y="10" width="7" height="11"/><rect x="3" y="13" width="7" height="8"/>',
+  store: '<path d="M3 9l1.5-5h15L21 9M4 9v11h16V9M9 20v-6h6v6"/>',
+  box: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 21v-9"/>',
+  film: '<path d="M3 5h18v14H3zM7 5v14M17 5v14M3 9h4M3 15h4M17 9h4M17 15h4"/>',
+  bot: '<path d="M12 3v3M6 8h12v10H6zM9 13h.01M15 13h.01M9 18v2M15 18v2"/>',
+  plug: '<path d="M9 3v6M15 3v6M6 9h12v3a6 6 0 01-6 6 6 6 0 01-6-6zM12 18v3"/>',
+  inbox: '<path d="M3 13l3-8h12l3 8v6H3zM3 13h5l1 2h6l1-2h5"/>',
+  chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  calendar: '<path d="M4 5h16v16H4zM4 10h16M9 3v4M15 3v4"/>'
+};
+function icon(name, cls) {
+  return '<svg class="' + (cls || 'ic') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICONS[name] || '') + '</svg>';
+}
+function ESC(v) {
+  return String(v == null ? "" : v).replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+}
+function reduceMotion() { return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches; }
+function timeAgo(ms) {
+  var s = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+  if (s < 60) return "hace " + s + " s";
+  var m = Math.floor(s / 60); if (m < 60) return "hace " + m + " min";
+  var h = Math.floor(m / 60); if (h < 24) return "hace " + h + " h";
+  return "hace " + Math.floor(h / 24) + " d";
+}
+var STATUS = { done: ["done", "Hecho"], progress: ["progress", "En curso"], review: ["review", "En revisión"], blocked: ["blocked", "Bloqueado"], todo: ["todo", "Pendiente"] };
+
+var SECTIONS = [
+  ["panel", "Panel", "panel"], ["facturacion", "Facturación", "chart"], ["tiendas", "Tiendas y enlaces", "store"],
+  ["productos", "Productos", "box"], ["contenido", "Contenido", "film"], ["agentes", "Agentes", "bot"],
+  ["conectores", "Conectores", "plug"], ["plan", "Plan 6 meses", "calendar"], ["bandeja", "Bandeja humana", "inbox"]
+];
+function inboxPending() { return (DATA.inbox || []).filter(function (i) { return localStorage.getItem("oc_" + i.id) !== "1"; }).length; }
+function renderNav() {
+  var pend = inboxPending();
+  document.getElementById("nav").innerHTML = SECTIONS.map(function (s) {
+    var badge = (s[0] === "bandeja" && pend) ? '<span class="badge">' + pend + '</span>' : '';
+    return '<button class="nav-item" role="button" tabindex="0" data-go="' + s[0] + '">' + icon(s[2]) + '<span>' + ESC(s[1]) + '</span>' + badge + '</button>';
+  }).join("");
+  document.getElementById("navAccounts").innerHTML = (DATA.shops || []).map(function (sh) {
+    return '<button class="nav-item" role="button" tabindex="0" data-go="tiendas">' + icon('store') + '<span>' + ESC(sh.name) + '</span></button>';
+  }).join("") || '<div class="side-note">Sin cuentas cargadas</div>';
+}
+function go(id) {
+  document.querySelectorAll(".section").forEach(function (s) { s.classList.remove("active"); });
+  var el = document.getElementById("s-" + id); if (el) el.classList.add("active");
+  document.querySelectorAll("#nav .nav-item").forEach(function (b) { b.classList.toggle("active", b.dataset.go === id); });
+  var hit = SECTIONS.filter(function (s) { return s[0] === id; })[0];
+  document.getElementById("crumbNow").textContent = hit ? hit[1] : "Panel";
+  window.scrollTo(0, 0);
+}
+function renderKpis(prev) {
+  var wrap = document.getElementById("kpis");
+  if (!wrap.children.length) {
+    wrap.innerHTML = (DATA.kpis || []).map(function (k) {
+      return '<div class="kpi"><div class="label">' + ESC(k.label) + '</div><div class="value" id="k-' + ESC(k.id) + '">' + ESC(k.value) + '</div><div class="delta ' + ESC(k.dir || "") + '">' + ESC(k.delta || "") + '</div></div>';
+    }).join("");
+    return;
+  }
+  (DATA.kpis || []).forEach(function (k) {
+    var cell = document.getElementById("k-" + k.id); if (!cell) return;
+    cell.textContent = k.value;
+    if (prev && prev[k.id] !== undefined && String(prev[k.id]) !== String(k.value) && !reduceMotion()) {
+      cell.classList.add("flash"); setTimeout(function () { cell.classList.remove("flash"); }, 700);
+    }
+  });
+}
+function renderSpark() {
+  var s = DATA.series || [], L = DATA.seriesLabels || [];
+  if (!s.length) return;
+  var W = 600, H = 140, padL = 16, padR = 16, padT = 10, padB = 24;
+  var max = Math.max.apply(null, s.concat([1]));
+  var stepX = (W - padL - padR) / Math.max(1, s.length - 1);
+  var pts = s.map(function (v, i) { return [padL + i * stepX, padT + (1 - v / (max * 1.15)) * (H - padT - padB)]; });
+  var line = "M " + pts.map(function (p) { return p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" L ");
+  document.getElementById("sparkLine").setAttribute("d", line);
+  document.getElementById("sparkFill").setAttribute("d", line + " L " + pts[pts.length - 1][0].toFixed(1) + " " + (H - padB) + " L " + pts[0][0].toFixed(1) + " " + (H - padB) + " Z");
+  document.getElementById("sparkDots").innerHTML = pts.map(function (p) { return '<circle class="spark-dot" cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3"/>'; }).join("");
+  document.getElementById("sparkLabels").innerHTML = L.map(function (d, i) {
+    return '<text x="' + (padL + i * stepX).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + ESC(d) + '</text>';
+  }).join("");
+  document.getElementById("sparkSum").textContent = s.reduce(function (a, b) { return a + b; }, 0) + " en total";
+  if (DATA.seriesTitulo) document.getElementById("sparkTitle").textContent = DATA.seriesTitulo;
+  document.getElementById("feedWindow").textContent = "últimos movimientos";
+}
+function renderFeed() {
+  var feed = DATA.feed || [];
+  document.getElementById("feed").innerHTML = feed.length ? feed.map(function (f) {
+    return '<div class="feed-row"><span class="av" style="background:' + ESC(f.color || "#7f8c8d") + '">' + ESC(f.initials || "") + '</span>' +
+      '<div class="body"><span class="who">' + ESC(f.who) + '</span> <span>' + ESC(f.action) + '</span> <span>' + ESC(f.target) + '</span></div>' +
+      '<div class="time">' + ESC(f.when || "") + '</div></div>';
+  }).join("") : '<div class="empty"><div class="h">Sin actividad todavía</div>Aún no hay movimientos de agentes registrados. El primer daily standup los generará.</div>';
+}
+function renderRows() {
+  var db = document.getElementById("db");
+  db.querySelectorAll(".db-row").forEach(function (n) { n.remove(); });
+  (DATA.rows || []).forEach(function (r) {
+    var st = STATUS[r.status] || STATUS.todo;
+    var div = document.createElement("div");
+    div.className = "db-row";
+    div.innerHTML = '<div class="db-cell">' + ESC(r.tarea || "") + '</div>' +
+      '<div class="db-cell title" title="' + ESC(r.title) + '">' + ESC(r.title) + '</div>' +
+      '<div class="db-cell"><span class="pill ' + st[0] + '">' + st[1] + '</span></div>' +
+      '<div class="db-cell who">' + ESC(r.marca || "") + '</div>' +
+      '<div class="db-cell updated">' + ESC(r.updated || "—") + '</div>';
+    db.appendChild(div);
+  });
+  if (!(DATA.rows || []).length) db.insertAdjacentHTML("beforeend", '<div class="empty" style="margin:12px"><div class="h">Sin tareas activas</div>Todo cerrado por ahora.</div>');
+}
+function renderShops() {
+  document.getElementById("shops").innerHTML = (DATA.shops || []).map(function (s) {
+    var cls = s.status === "ok" ? "ok" : (s.status === "warn" ? "warn" : "off");
+    return '<div class="tile"><div class="t-name">' + ESC(s.name) + '</div><div class="t-meta">' + ESC(s.meta || "") + '</div>' +
+      '<div class="t-foot"><span class="tag ' + cls + '">' + ESC(s.state || "") + '</span>' +
+      (s.url ? '<a class="btn ghost" href="' + ESC(s.url) + '" target="_blank" rel="noopener">Abrir</a>' : '') + '</div></div>';
+  }).join("");
+  var g = DATA.goal || {};
+  document.getElementById("goal30").innerHTML =
+    '<div class="card-title"><strong>30 días para vender en las tres tiendas</strong><span class="tag warn">' + ESC(g.estado || "en marcha") + '</span></div>' +
+    '<div class="db" style="border:0"><div class="db-head"><div>Día</div><div>Hito</div><div>Estado</div><div class="db-cell who">Canal</div><div class="db-cell updated">Nota</div></div>' +
+    (g.hitos || []).map(function (h) {
+      var st = STATUS[h.status] || STATUS.todo;
+      return '<div class="db-row"><div class="db-cell">' + ESC(h.dia) + '</div><div class="db-cell title" title="' + ESC(h.titulo) + '">' + ESC(h.titulo) + '</div>' +
+        '<div class="db-cell"><span class="pill ' + st[0] + '">' + st[1] + '</span></div><div class="db-cell who">' + ESC(h.canal) + '</div><div class="db-cell updated">' + ESC(h.nota || "") + '</div></div>';
+    }).join("") + '</div>';
+}
+function renderAgents() {
+  var t = document.getElementById("agentsTbl");
+  t.querySelectorAll(".db-row").forEach(function (n) { n.remove(); });
+  (DATA.agents || []).forEach(function (a) {
+    var cls = a.last === "ok" ? "ok" : (a.last === "error" ? "warn" : "off");
+    var div = document.createElement("div");
+    div.className = "db-row";
+    div.innerHTML = '<div class="db-cell">' + ESC(a.cron) + '</div><div class="db-cell title">' + ESC(a.name) + '</div>' +
+      '<div class="db-cell title" title="' + ESC(a.what) + '">' + ESC(a.what) + '</div>' +
+      '<div class="db-cell who">' + ESC(a.marca || "—") + '</div>' +
+      '<div class="db-cell updated"><span class="tag ' + cls + '">' + ESC(a.lastLabel || "—") + '</span></div>';
+    t.appendChild(div);
+  });
+}
+function renderConnectors() {
+  var t = document.getElementById("connTbl");
+  t.querySelectorAll(".db-row").forEach(function (n) { n.remove(); });
+  (DATA.connectors || []).forEach(function (c) {
+    var cls = c.status === "ok" ? "ok" : (c.status === "warn" ? "warn" : "off");
+    var div = document.createElement("div");
+    div.className = "db-row";
+    div.innerHTML = '<div class="db-cell">' + ESC(c.kind) + '</div><div class="db-cell title">' + ESC(c.name) + '</div>' +
+      '<div class="db-cell title" title="' + ESC(c.permite) + '">' + ESC(c.permite) + '</div>' +
+      '<div class="db-cell who">' + ESC(c.auth) + '</div>' +
+      '<div class="db-cell updated"><span class="tag ' + cls + '">' + ESC(c.state) + '</span></div>';
+    t.appendChild(div);
+  });
+  document.getElementById("llms").innerHTML = (DATA.llms || []).map(function (l) {
+    return '<div class="tile"><div class="t-name">' + ESC(l.name) + '</div><div class="t-meta">' + ESC(l.meta) + '</div>' +
+      '<div class="t-foot"><span class="tag ok">' + ESC(l.estado) + '</span></div></div>';
+  }).join("");
+}
+function renderInbox() {
+  var el = document.getElementById("inbox");
+  el.innerHTML = (DATA.inbox || []).length ? DATA.inbox.map(function (i) {
+    var done = localStorage.getItem("oc_" + i.id) === "1";
+    return '<div class="inbox-row' + (done ? " done" : "") + '" data-id="' + ESC(i.id) + '">' +
+      '<input type="checkbox" id="ck-' + ESC(i.id) + '" ' + (done ? "checked" : "") + ' aria-label="Marcar como hecho" />' +
+      '<div class="txt"><div class="t">' + ESC(i.title) + '</div><div class="d">' + ESC(i.detail || "") + '</div></div>' +
+      '<span class="tag ' + (i.prio === "Alta" ? "warn" : "off") + '">' + ESC(i.prio || "Media") + '</span></div>';
+  }).join("") : '<div class="empty"><div class="h">Bandeja vacía</div>No hay aprobaciones pendientes. Cuando los agentes necesiten tu OK, aparecerán aquí.</div>';
+  el.querySelectorAll("input[type=checkbox]").forEach(function (ch) {
+    ch.addEventListener("change", function () {
+      var id = ch.closest(".inbox-row").dataset.id;
+      localStorage.setItem("oc_" + id, ch.checked ? "1" : "0");
+      ch.closest(".inbox-row").classList.toggle("done", ch.checked);
+      renderNav();
+    });
+  });
+}
+function renderProducts() {
+  document.getElementById("productsBox").innerHTML =
+    '<div class="empty"><div class="h">Todavía no hay productos validados</div>' +
+    'Los Exploradores rellenan esta tabla cada mañana a las 9:30 y 10:15 (nicho friki-90s y belleza·bienestar·bebé). ' +
+    'Mientras tanto, puedes lanzar una exploración ahora desde <strong>Bandeja humana → Lanzar un encargo</strong>.</div>';
+}
+function renderContent() {
+  document.getElementById("contentBox").innerHTML =
+    '<div class="empty"><div class="h">La cola de contenido está vacía</div>' +
+    'Cuando haya un producto validado, el Guionista escribirá el guion y aparecerá aquí con su estado: guion → grabado → editado → programado → publicado.</div>';
+}
+
+function fmtN(n) { return (Number(n) || 0).toLocaleString("es-ES", { maximumFractionDigits: 2 }); }
+function renderComercial() {
+  var c = DATA.comercial || {}, obj = c.objetivo || 100000, real = c.real || 0, pct = Math.min(100, c.pct || 0);
+  document.getElementById("tracker").innerHTML =
+    '<div class="tracker"><div class="t-num">' + fmtN(real) + ' € <span class="t-of">de ' + fmtN(obj) + ' €</span></div>' +
+    '<div class="t-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Avance hacia el objetivo"><span style="width:' + pct + '%"></span></div>' +
+    '<div class="t-meta"><span>' + fmtN(c.pct || 0) + ' % de avance</span><span>Ritmo necesario: ' + fmtN(c.ritmo_semanal) + ' €/semana</span><span>' + (c.pedidos_real || 0) + ' pedidos reales · ' + (c.clientes || 0) + ' clientes</span>' + (c.pruebas ? '<span class="tag off">' + c.pruebas + ' prueba(s) excluida(s) del objetivo</span>' : '') + '</div></div>' +
+    ((c.por_canal || []).length ? '<div class="h-sub" style="margin-top:14px">Por canal: ' + c.por_canal.map(function (x) { return ESC(x.canal) + ' — ' + fmtN(x.total) + ' € (' + x.n + ')'; }).join(' · ') + '</div>' : '<div class="h-sub" style="margin-top:14px">Sin ventas reales todavía: cuando entre el primer pedido, aquí aparecerá el desglose por canal y producto.</div>');
+  var ot = document.getElementById("ordersTbl");
+  ot.querySelectorAll(".db-row").forEach(function (n) { n.remove(); });
+  (c.pedidos || []).forEach(function (o) {
+    var st = o.estado === "pagado" ? "done" : (o.estado === "enviado" ? "review" : (o.estado === "cancelado" ? "blocked" : "progress"));
+    var d = document.createElement("div"); d.className = "db-row";
+    d.innerHTML = '<div class="db-cell">' + ESC(o.id) + (o.es_prueba ? ' <span class="tag off">prueba</span>' : '') + '</div>' +
+      '<div class="db-cell title" title="' + ESC(o.concepto) + '">' + ESC(o.concepto) + '</div>' +
+      '<div class="db-cell">' + fmtN(o.importe) + ' €</div><div class="db-cell who">' + ESC(o.canal) + '</div>' +
+      '<div class="db-cell updated"><span class="pill ' + st + '">' + ESC(o.estado) + '</span></div>';
+    ot.appendChild(d);
+  });
+  if (!(c.pedidos || []).length) ot.insertAdjacentHTML("beforeend", '<div class="empty" style="margin:12px"><div class="h">Sin pedidos todavía</div>El primero llegará desde TikTok Shop, Etsy o Whop. Los pedidos de prueba no cuentan para el objetivo.</div>');
+  var it = document.getElementById("invTbl");
+  it.querySelectorAll(".db-row").forEach(function (n) { n.remove(); });
+  (c.facturas || []).forEach(function (f) {
+    var st = f.estado_cobro === "cobrada" ? "done" : "progress";
+    var d = document.createElement("div"); d.className = "db-row";
+    d.innerHTML = '<div class="db-cell">' + ESC(f.numero) + '</div><div class="db-cell title">' + ESC(f.cliente) + ' · ' + ESC(f.concepto) + '</div>' +
+      '<div class="db-cell">' + fmtN(f.importe) + ' €</div><div class="db-cell who">' + ESC(f.fecha) + '</div>' +
+      '<div class="db-cell updated"><span class="pill ' + st + '">' + ESC(f.estado_cobro) + '</span></div>';
+    it.appendChild(d);
+  });
+  if (!(c.facturas || []).length) it.insertAdjacentHTML("beforeend", '<div class="empty" style="margin:12px"><div class="h">Libro vacío</div>Cada pedido genera su factura numerada con el comando del registro.</div>');
+}
+function renderPlan() {
+  var t = document.getElementById("planTbl");
+  t.querySelectorAll(".db-row").forEach(function (n) { n.remove(); });
+  (DATA.plan6m || []).forEach(function (p) {
+    var st = STATUS[p.status] || STATUS.todo;
+    var d = document.createElement("div"); d.className = "db-row";
+    d.innerHTML = '<div class="db-cell">' + ESC(p.mes) + '</div><div class="db-cell">' + fmtN(p.objetivo) + ' €</div>' +
+      '<div class="db-cell title" title="' + ESC(p.acciones) + '">' + ESC(p.acciones) + '</div>' +
+      '<div class="db-cell who title" title="' + ESC(p.comprobacion) + '">' + ESC(p.comprobacion) + '</div>' +
+      '<div class="db-cell updated"><span class="pill ' + st[0] + '">' + st[1] + '</span></div>';
+    t.appendChild(d);
+  });
+  document.getElementById("manualBox").innerHTML =
+    '<div class="card-title"><strong>Rutinas y accesos</strong></div>' +
+    '<div style="font-size:13.5px;line-height:1.7">' +
+    '<strong>Diario (30-60 min):</strong> leer el informe de los Exploradores → elegir producto → grabar/publicar → aprobar la bandeja.<br>' +
+    '<strong>Semanal (viernes):</strong> revisar review del equipo, refrescar facturación, conciliar mes y actualizar precios.<br>' +
+    '<strong>Antes de gastar:</strong> cualquier pauta o contrato se confirma contigo (no se compromete gasto sin tu OK).<br>' +
+    '<strong>Si algo se rompe:</strong> el panel avisa en ámbar; el detalle y los pasos están en <span class="key">MANUAL-OPERACION.md</span>.</div>';
+}
+function renderEnlaces() {
+  var t = document.getElementById("linksTbl");
+  t.querySelectorAll(".db-row").forEach(function (n) { n.remove(); });
+  (DATA.enlaces || []).forEach(function (l) {
+    var tag = l.estado === "ok" ? "ok" : (l.estado === "sesion" ? "warn" : "off");
+    var d = document.createElement("div"); d.className = "db-row";
+    d.innerHTML = '<div class="db-cell">' + ESC(l.http) + '</div><div class="db-cell title">' + ESC(l.name) + '</div>' +
+      '<div class="db-cell"><span class="tag ' + tag + '">' + ESC(l.estado) + '</span></div>' +
+      '<div class="db-cell who">' + (l.estado === "pendiente" ? "falta el dato" : (l.estado === "sesion" ? "requiere tu sesión" : "abre para todos")) + '</div>' +
+      '<div class="db-cell updated">' + (l.url ? '<a class="btn ghost" href="' + ESC(l.url) + '" target="_blank" rel="noopener">Abrir</a>' : '—') + '</div>';
+    t.appendChild(d);
+  });
+}
+
+var busy = false, lastRefresh = Date.now(), autoOn = localStorage.getItem("oc_auto") !== "0", timer = null;
+function snapshotKpis() { var o = {}; (DATA.kpis || []).forEach(function (k) { o[k.id] = k.value; }); return o; }
+async function refresh(opts) {
+  opts = opts || {}; if (busy) return; busy = true;
+  document.getElementById("refreshIco").classList.add("spin");
+  document.getElementById("livePill").classList.add("syncing");
+  document.getElementById("liveText").textContent = "Sincronizando…";
+  var prev = snapshotKpis(), changed = false;
+  try {
+    if (location.protocol !== "file:") {
+      var r = await fetch("./data/data.demo.json?t=" + Date.now(), { cache: "no-store" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      var fresh = await r.json();
+      if (fresh && fresh.generado) { DATA = fresh; changed = true; }
+    } else {
+      await new Promise(function (res) { setTimeout(res, 400); });
+    }
+    lastRefresh = Date.now();
+    renderAll(prev);
+    if (!opts.silent) toast(changed ? "Datos actualizados desde data.json" : "Datos locales al día (usa servir.bat para refresco vivo)");
+  } catch (err) {
+    document.getElementById("livePill").classList.add("stale");
+    document.getElementById("liveText").textContent = "Sin conexión · " + timeAgo(lastRefresh);
+    if (!opts.silent) toast("No se pudo leer data.json: " + err.message);
+  } finally {
+    busy = false;
+    document.getElementById("refreshIco").classList.remove("spin");
+    document.getElementById("livePill").classList.remove("syncing");
+    updateTimes();
+  }
+}
+function updateTimes() {
+  document.getElementById("updatedAt").textContent = "Actualizado " + timeAgo(lastRefresh);
+  document.getElementById("footerTime").textContent = "Última lectura · " + new Date(lastRefresh).toLocaleTimeString();
+  var stale = Date.now() - lastRefresh > 90000;
+  document.getElementById("livePill").classList.toggle("stale", stale);
+  document.getElementById("liveText").textContent = stale ? ("Desactualizado · " + timeAgo(lastRefresh)) : "En vivo · sincronizado";
+}
+function renderAll(prev) { renderNav(); renderKpis(prev); renderSpark(); renderFeed(); renderRows(); renderShops(); renderAgents(); renderConnectors(); renderInbox(); renderProducts(); renderContent(); renderComercial(); renderPlan(); renderEnlaces(); updateTimes(); }
+function toast(m) { var t = document.getElementById("toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove("show"); }, 2000); }
+
+document.addEventListener("click", function (ev) { var b = ev.target.closest("[data-go]"); if (b) go(b.dataset.go); });
+document.addEventListener("keydown", function (ev) {
+  if (ev.key !== "Enter" && ev.key !== " ") return;
+  var t = ev.target;
+  if (!(t instanceof HTMLElement) || t.getAttribute("role") !== "button") return;
+  if (t.matches("button, a, input, select, textarea")) return;
+  ev.preventDefault(); t.click();
+});
+document.getElementById("refreshBtn").addEventListener("click", function () { refresh(); });
+document.getElementById("autoBtn").addEventListener("click", function () {
+  autoOn = !autoOn;
+  document.getElementById("autoLbl").textContent = "Auto · " + (autoOn ? "activo" : "pausado");
+  this.setAttribute("aria-pressed", String(autoOn));
+  localStorage.setItem("oc_auto", autoOn ? "1" : "0");
+  autoOn ? startAuto() : stopAuto();
+  toast("Refresco automático " + (autoOn ? "activado (60 s)" : "pausado"));
+});
+function startAuto() { stopAuto(); timer = setInterval(function () { refresh({ silent: true }); }, 60000); }
+function stopAuto() { if (timer) clearInterval(timer); timer = null; }
+
+document.getElementById("orderForm").addEventListener("submit", function (ev) {
+  ev.preventDefault();
+  var input = document.getElementById("o-what");
+  var what = input.value.trim();
+  var okWhat = what.length >= 10;
+  document.getElementById("f-what").classList.toggle("invalid", !okWhat);
+  if (!okWhat) { input.focus(); return; }
+  var marca = document.getElementById("o-brand").value, prio = document.getElementById("o-prio").value;
+  var cmd = "encargo [" + marca + " · " + prio + "]: " + what;
+  document.getElementById("orderOut").innerHTML =
+    '<div class="cmd"><code id="cmdText">' + ESC(cmd) + '</code><button class="btn" type="button" id="copyBtn">Copiar</button></div>' +
+    '<div class="h-sub" style="margin-top:8px">Pega esto en el chat del agente (Control UI) y el equipo lo coge al vuelo.</div>';
+  document.getElementById("copyBtn").addEventListener("click", function () {
+    navigator.clipboard.writeText(cmd).then(function () { toast("Encargo copiado"); }, function () { toast("Copia el texto manualmente"); });
+  });
+});
+document.getElementById("o-what").addEventListener("blur", function () {
+  document.getElementById("f-what").classList.toggle("invalid", this.value.trim().length < 10);
+});
+
+document.getElementById("srcName").textContent = (DATA.fuente || "Linear API");
+renderAll();
+document.getElementById("autoLbl").textContent = "Auto · " + (autoOn ? "activo" : "pausado");
+if (autoOn) startAuto();
+setInterval(updateTimes, 5000);
+setTimeout(function () { refresh({ silent: true }); }, 600);
+</script>
+</body>
+</html>
