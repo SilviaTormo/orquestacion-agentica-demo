@@ -17,15 +17,15 @@ Además, dos enlaces abren **solo con tu sesión** (no están rotos): el panel d
 | 1 | https://www.tiktok.com/@bellezanbienestarbebe | **200** | correcto | abierto | abierto ✅ |
 | 2 | TikTok · frikienlos90 | — | **sin dato**: falta el @handle | botón a la home de TikTok (inútil) | **sin botón** + estado "pendiente" |
 | 3 | https://www.etsy.com/sell | **200** | es el alta, no una tienda | como si fuera tienda | etiquetado "en alta" ✅ |
-| 4 | https://whop.com/dashboard/biz_DKnr550HGJtKJa/ | 200 → redirige a login | requiere sesión | parecía roto | "requiere tu sesión" ✅ |
+| 4 | https://whop.com/dashboard/ID-INTERNO/ | 200 → redirige a login | requiere sesión | parecía roto | "requiere tu sesión" ✅ |
 | 5 | https://www.fastmoss.com/es/account/center | 429 | protección anti-bot (abre en navegador) | parecía roto | "requiere sesión" ✅ |
 | 6 | https://developers.fastmoss.com/ | 567 | protección anti-bot | — | documentado ✅ |
 | 7 | https://partner.tiktokshop.com/ | **200** | correcto | — | abierto ✅ |
 | 8 | https://docs.whop.com/ | **200** | correcto | — | abierto ✅ |
 | 9 | https://developer.etsy.com/ | **200** | correcto | — | abierto ✅ |
-| 10 | https://linear.app/stnnvtn/project/fastmoss-10k-gmv-850915664337 | **200** | correcto | — | abierto ✅ |
-| 11 | http://127.0.0.1:8787/ (app local) | **200** | correcto | — | servida ✅ |
-| 12 | http://127.0.0.1:8787/data.json | **200** | correcto | — | servida ✅ |
+| 10 | el tablero interno | **200** | correcto | — | abierto ✅ |
+| 11 | http://el panel local/ (app local) | **200** | correcto | — | servida ✅ |
+| 12 | http://el panel local/data.json | **200** | correcto | — | servida ✅ |
 
 **Resumen numérico:** 12 URLs comprobadas · 9 responden 200 · 2 requieren sesión (Whop, FastMoss) · 2 bloquean bots (429/567) · **1 sin URL (frikienlos90)** · 0 errores 404.
 
@@ -48,6 +48,6 @@ Además, dos enlaces abren **solo con tu sesión** (no están rotos): el panel d
 | Ruta | Estado | Evidencia |
 |---|---|---|
 | Web → ficha de producto → pago | **no verificable aún**: no hay tienda publicada con catálogo | falta la tienda (TikTok Shop seller / Etsy) |
-| Pago → registro de pedido → factura | **verificada en el sistema**: pedido P-0001 y factura F-2026-0001 creados y conciliados | `registro.db`, `data-comercial.json`, conciliación "cuadra: true" |
+| Pago → registro de pedido → factura | **verificada en el sistema**: pedido P-0001 y factura F-2026-0001 creados y conciliados | `el registro interno`, `los datos comerciales`, conciliación "cuadra: true" |
 
 > Cuando exista la primera tienda, la verificación de compra extremo a extremo se hace con una compra de prueba (o en modo test de la pasarela) siguiendo `MANUAL-OPERACION.md` §5.
